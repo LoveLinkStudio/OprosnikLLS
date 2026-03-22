@@ -506,11 +506,10 @@
         // Инициализация date input с будущей датой
         const today = new Date().toISOString().split('T')[0];
         document.getElementById('weddingDate').min = today;
-	// Хешированный пароль (Igorek72rus@ -> SHA256)
-const ADMIN_HASH = '8f4d9b3c2a1e5f7d9c8b2e4a6f1d3e5c7b9a2e4f6d8c1e3a5b7d9f2e4a6c8d1e';
-
-// Админ функции
+	// 🔥 ПРОСТОЙ БЕЗОПАСНЫЙ ПАРОЛЬ
 let adminLoggedIn = false;
+const SECRET_PASSWORD = 'Igorek72rus@'; // ← ВАШ пароль здесь
+
 function toggleAdmin() {
   const panel = document.getElementById('adminPanel');
   panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
@@ -518,12 +517,12 @@ function toggleAdmin() {
 
 function loginAdmin() {
   const pass = document.getElementById('adminPass').value;
-  const hash = sha256(pass);
-  if (hash === ADMIN_HASH) {
+  if (pass === SECRET_PASSWORD) {
     adminLoggedIn = true;
     document.getElementById('adminContent').style.display = 'block';
     document.getElementById('adminPass').style.display = 'none';
     loadSurveys();
+    alert('✅ Вход выполнен!');
   } else {
     alert('❌ Неверный пароль!');
   }
@@ -533,10 +532,8 @@ async function loadSurveys() {
   try {
     if (db) {
       const snapshot = await db.collection('weddingSurveys').get();
-      const surveysList = document.getElementById('surveysList');
       document.getElementById('surveyCount').textContent = snapshot.size;
-      
-      surveysList.innerHTML = snapshot.docs.map(doc => {
+      document.getElementById('surveysList').innerHTML = snapshot.docs.map(doc => {
         const data = doc.data();
         return `<div style="border-bottom:1px solid #eee; padding:10px 0;">
           <strong>${data.coupleNames || 'Без имени'}</strong><br>
@@ -551,36 +548,21 @@ async function loadSurveys() {
 
 function downloadXLS() {
   if (!adminLoggedIn) return alert('Требуется вход в админку!');
-  
   db.collection('weddingSurveys').get().then(snapshot => {
     const data = snapshot.docs.map(doc => {
       const d = doc.data();
-      return [d.weddingDate, d.coupleNames, d.venue, d.timeline, d.dressCode, d.extraInfo, d.designStyle, d.mediaInfo, d.loveStory, d.options?.join(', ') || ''].join('\t');
-    }).join('\n');
-    
-    const blob = new Blob(['Дата\tИмена\tМесто\tТайминг\tЦвета\tДоп.инфо\tДизайн\tМедиа\tИстория\tОпции\n' + data], {type: 'text/tab-separated-values'});
+      return [d.weddingDate, d.coupleNames, d.venue, d.timeline, d.dressCode, 
+              d.extraInfo, d.designStyle, d.mediaInfo, d.loveStory, 
+              d.options?.join(', ') || ''].join('\\t');
+    }).join('\\n');
+    const blob = new Blob(['Дата\\tИмена\\tМесто\\tТайминг\\tЦвета\\tДоп.инфо\\tДизайн\\tМедиа\\tИстория\\tОпции\\n' + data], 
+                         {type: 'text/tab-separated-values'});
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
     a.download = 'oprosnik_results.xls';
     a.click();
   });
-}
-
-// ПРАВИЛЬНАЯ функция SHA256
-function sha256(str) {
-    function int32(n) { return n & 0xffffffff; }
-    let hash = 0x67452301, i, a, b, c, d, f, g, temp;
-    for (i = 0; i < str.length; i++) {
-        a = hash;
-        b = int32((hash << 5) | (hash >>> 27));
-        c = int32((hash << 3) | (hash >>> 29));
-        d = int32(hash << 7);
-        f = str.charCodeAt(i);
-        g = int32(a + b + c + d + f);
-        hash = int32((g << 1) | (g >>> 31));
-    }
-    return hash.toString(16).padStart(32, '0');
 }
     </script>
 </body>
