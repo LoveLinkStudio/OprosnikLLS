@@ -550,35 +550,53 @@ function downloadXLS() {
   if (!adminLoggedIn) return alert('Требуется вход в админку!');
   
   db.collection('weddingSurveys').get().then(snapshot => {
+    // 🔥 Заголовки таблицы
     const headers = ['Дата', 'Имена', 'Место', 'Тайминг', 'Цвета', 'Доп.инфо', 'Дизайн', 'Медиа', 'История', 'Опции'];
+    
+    // 🔥 Очистка данных от проблемных символов
+    const cleanText = (text) => {
+      if (!text) return '';
+      return String(text)
+        .replace(/\t/g, ' ')    // табуляции → пробелы
+        .replace(/\n/g, ' ')    // переносы → пробелы  
+        .replace(/"/g, "'")     // кавычки → апострофы
+        .trim()
+        .substring(0, 100);     // максимум 100 символов
+    };
     
     const data = snapshot.docs.map(doc => {
       const d = doc.data();
       return [
-        d.weddingDate || '',
-        d.coupleNames || '',
-        d.venue || '',
-        d.timeline || '',
-        d.dressCode || '',
-        d.extraInfo || '',
-        d.designStyle || '',
-        d.mediaInfo || '',
-        d.loveStory || '',
-        d.options ? d.options.join(', ') : ''
+        cleanText(d.weddingDate),
+        cleanText(d.coupleNames),
+        cleanText(d.venue),
+        cleanText(d.timeline),
+        cleanText(d.dressCode),
+        cleanText(d.extraInfo),
+        cleanText(d.designStyle),
+        cleanText(d.mediaInfo),
+        cleanText(d.loveStory),
+        Array.isArray(d.options) ? d.options.join(', ') : cleanText(d.options)
       ];
     });
     
-    // 🔥 BOM + UTF-8 для русского текста в Excel
+    // 🔥 BOM + UTF-8 + Табуляция = ИДЕАЛЬНЫЙ Excel
     const BOM = '\uFEFF';
-    const csvContent = BOM + headers.join('\t') + '\n' + 
-                      data.map(row => row.join('\t')).join('\n');
+    const csvContent = BOM + 
+      headers.join('\t') + '\n' + 
+      data.map(row => row.join('\t')).join('\n');
     
-    const blob = new Blob([csvContent], { type: 'text/tab-separated-values;charset=utf-8' });
+    const blob = new Blob([csvContent], { 
+      type: 'text/tab-separated-values;charset=utf-8' 
+    });
+    
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'oprosnik_results.csv'; // ← CSV вместо XLS
+    a.download = 'wedding_results.csv';
+    document.body.appendChild(a);
     a.click();
+    document.body.removeChild(a);
     URL.revokeObjectURL(url);
   });
 }
