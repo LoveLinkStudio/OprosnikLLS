@@ -548,20 +548,38 @@ async function loadSurveys() {
 
 function downloadXLS() {
   if (!adminLoggedIn) return alert('Требуется вход в админку!');
+  
   db.collection('weddingSurveys').get().then(snapshot => {
+    const headers = ['Дата', 'Имена', 'Место', 'Тайминг', 'Цвета', 'Доп.инфо', 'Дизайн', 'Медиа', 'История', 'Опции'];
+    
     const data = snapshot.docs.map(doc => {
       const d = doc.data();
-      return [d.weddingDate, d.coupleNames, d.venue, d.timeline, d.dressCode, 
-              d.extraInfo, d.designStyle, d.mediaInfo, d.loveStory, 
-              d.options?.join(', ') || ''].join('\\t');
-    }).join('\\n');
-    const blob = new Blob(['Дата\\tИмена\\tМесто\\tТайминг\\tЦвета\\tДоп.инфо\\tДизайн\\tМедиа\\tИстория\\tОпции\\n' + data], 
-                         {type: 'text/tab-separated-values'});
+      return [
+        d.weddingDate || '',
+        d.coupleNames || '',
+        d.venue || '',
+        d.timeline || '',
+        d.dressCode || '',
+        d.extraInfo || '',
+        d.designStyle || '',
+        d.mediaInfo || '',
+        d.loveStory || '',
+        d.options ? d.options.join(', ') : ''
+      ];
+    });
+    
+    // 🔥 BOM + UTF-8 для русского текста в Excel
+    const BOM = '\uFEFF';
+    const csvContent = BOM + headers.join('\t') + '\n' + 
+                      data.map(row => row.join('\t')).join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/tab-separated-values;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'oprosnik_results.xls';
+    a.download = 'oprosnik_results.csv'; // ← CSV вместо XLS
     a.click();
+    URL.revokeObjectURL(url);
   });
 }
     </script>
