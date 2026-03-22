@@ -550,41 +550,50 @@ function downloadXLS() {
   if (!adminLoggedIn) return alert('Требуется вход в админку!');
   
   db.collection('weddingSurveys').get().then(snapshot => {
-    const headers = ['Дата', 'Имена', 'Место', 'Тайминг', 'Цвета', 'Доп.инфо', 'Дизайн', 'Медиа', 'История', 'Опции'];
-    
-    // 🔥 ОЧИСТКА для правильных столбцов
-    const cleanField = (text) => {
-      if (!text) return '';
-      return String(text)
-        .replace(/[\n\r\t]/g, ' ')  // УДАЛЯЕМ все табуляции и переносы
-        .replace(/"/g, "'")         // Кавычки → апострофы
-        .trim()
-        .slice(0, 80);              // Макс 80 символов
-    };
-    
-    const rows = snapshot.docs.map(doc => {
+    // Создаем HTML таблицу (Excel понимает идеально)
+    let htmlContent = `
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Опросник свадьбы</title>
+<style>
+table { border-collapse: collapse; width: 100%; font-family: Arial; }
+th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+th { background-color: #ff9a9e; color: white; font-weight: bold; }
+tr:nth-child(even) { background-color: #f9f9f9; }
+</style>
+</head>
+<body>
+<table>
+<tr>
+<th>Дата</th><th>Имена</th><th>Место</th><th>Тайминг</th><th>Цвета</th>
+<th>Доп.инфо</th><th>Дизайн</th><th>Медиа</th><th>История</th><th>Опции</th>
+</tr>`;
+
+    snapshot.docs.forEach(doc => {
       const d = doc.data();
-      return [
-        cleanField(d.weddingDate || ''),
-        cleanField(d.coupleNames || ''),
-        cleanField(d.venue || ''),
-        cleanField(d.timeline || ''),
-        cleanField(d.dressCode || ''),
-        cleanField(d.extraInfo || ''),
-        cleanField(d.designStyle || ''),
-        cleanField(d.mediaInfo || ''),
-        cleanField(d.loveStory || ''),
-        Array.isArray(d.options) ? d.options.join(', ') : cleanField(d.options)
-      ];
+      const clean = (text) => String(text || '').replace(/[<>&]/g, '').slice(0, 100);
+      
+      htmlContent += `
+<tr>
+<td>${clean(d.weddingDate)}</td>
+<td>${clean(d.coupleNames)}</td>
+<td>${clean(d.venue)}</td>
+<td>${clean(d.timeline)}</td>
+<td>${clean(d.dressCode)}</td>
+<td>${clean(d.extraInfo)}</td>
+<td>${clean(d.designStyle)}</td>
+<td>${clean(d.mediaInfo)}</td>
+<td>${clean(d.loveStory)}</td>
+<td>${Array.isArray(d.options) ? d.options.join(', ') : clean(d.options)}</td>
+</tr>`;
     });
-    
-    // 🔥 НАСТРОЙКА для Excel: BOM + Табуляция + UTF-8
+
+    htmlContent += '</table></body></html>';
+
     const BOM = '\uFEFF';
-    const csvContent = BOM + 
-      headers.join('\t') + '\r\n' + 
-      rows.map(row => row.join('\t')).join('\r\n');
-    
-    const blob = new Blob([csvContent], { 
+    const blob = new Blob([BOM + htmlContent], { 
       type: 'application/vnd.ms-excel;charset=utf-8' 
     });
     
