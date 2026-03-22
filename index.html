@@ -550,53 +550,49 @@ function downloadXLS() {
   if (!adminLoggedIn) return alert('Требуется вход в админку!');
   
   db.collection('weddingSurveys').get().then(snapshot => {
-    // 🔥 Заголовки таблицы
     const headers = ['Дата', 'Имена', 'Место', 'Тайминг', 'Цвета', 'Доп.инфо', 'Дизайн', 'Медиа', 'История', 'Опции'];
     
-    // 🔥 Очистка данных от проблемных символов
-    const cleanText = (text) => {
+    // 🔥 ОЧИСТКА для правильных столбцов
+    const cleanField = (text) => {
       if (!text) return '';
       return String(text)
-        .replace(/\t/g, ' ')    // табуляции → пробелы
-        .replace(/\n/g, ' ')    // переносы → пробелы  
-        .replace(/"/g, "'")     // кавычки → апострофы
+        .replace(/[\n\r\t]/g, ' ')  // УДАЛЯЕМ все табуляции и переносы
+        .replace(/"/g, "'")         // Кавычки → апострофы
         .trim()
-        .substring(0, 100);     // максимум 100 символов
+        .slice(0, 80);              // Макс 80 символов
     };
     
-    const data = snapshot.docs.map(doc => {
+    const rows = snapshot.docs.map(doc => {
       const d = doc.data();
       return [
-        cleanText(d.weddingDate),
-        cleanText(d.coupleNames),
-        cleanText(d.venue),
-        cleanText(d.timeline),
-        cleanText(d.dressCode),
-        cleanText(d.extraInfo),
-        cleanText(d.designStyle),
-        cleanText(d.mediaInfo),
-        cleanText(d.loveStory),
-        Array.isArray(d.options) ? d.options.join(', ') : cleanText(d.options)
+        cleanField(d.weddingDate || ''),
+        cleanField(d.coupleNames || ''),
+        cleanField(d.venue || ''),
+        cleanField(d.timeline || ''),
+        cleanField(d.dressCode || ''),
+        cleanField(d.extraInfo || ''),
+        cleanField(d.designStyle || ''),
+        cleanField(d.mediaInfo || ''),
+        cleanField(d.loveStory || ''),
+        Array.isArray(d.options) ? d.options.join(', ') : cleanField(d.options)
       ];
     });
     
-    // 🔥 BOM + UTF-8 + Табуляция = ИДЕАЛЬНЫЙ Excel
+    // 🔥 НАСТРОЙКА для Excel: BOM + Табуляция + UTF-8
     const BOM = '\uFEFF';
     const csvContent = BOM + 
-      headers.join('\t') + '\n' + 
-      data.map(row => row.join('\t')).join('\n');
+      headers.join('\t') + '\r\n' + 
+      rows.map(row => row.join('\t')).join('\r\n');
     
     const blob = new Blob([csvContent], { 
-      type: 'text/tab-separated-values;charset=utf-8' 
+      type: 'application/vnd.ms-excel;charset=utf-8' 
     });
     
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'wedding_results.csv';
-    document.body.appendChild(a);
+    a.download = 'wedding_results.xls';
     a.click();
-    document.body.removeChild(a);
     URL.revokeObjectURL(url);
   });
 }
