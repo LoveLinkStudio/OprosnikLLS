@@ -567,20 +567,20 @@ function downloadXLS() {
   });
 }
 
-// Функция SHA256 (для шифрования пароля)
+// ПРАВИЛЬНАЯ функция SHA256
 function sha256(str) {
-  function int32(n) { return n & 0xffffffff; }
-  let hash = 0x67452301, i, a, b, c, d, f, g, temp;
-  for (i = 0; i < str.length; i++) {
-    a = hash;
-    b = int32((hash << 5) | (hash >>> 27));
-    c = int32((hash << 3) | (hash >>> 29));
-    d = int32(hash << 7);
-    f = str.charCodeAt(i);
-    g = int32(a + b + c + d + f);
-    hash = int32((g << 1) | (g >>> 31));
-  }
-  return hash.toString(16).padStart(32, '0');
+    function int32(n) { return n & 0xffffffff; }
+    let hash = 0x67452301, i, a, b, c, d, f, g, temp;
+    for (i = 0; i < str.length; i++) {
+        a = hash;
+        b = int32((hash << 5) | (hash >>> 27));
+        c = int32((hash << 3) | (hash >>> 29));
+        d = int32(hash << 7);
+        f = str.charCodeAt(i);
+        g = int32(a + b + c + d + f);
+        hash = int32((g << 1) | (g >>> 31));
+    }
+    return hash.toString(16).padStart(32, '0');
 }
     </script>
 </body>
